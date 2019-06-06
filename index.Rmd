@@ -1,0 +1,115 @@
+# Which Democratic Presidential Candidate Is This?
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(out.width="900px", dpi=300)
+```
+
+Data and [R](https://www.r-project.org/) code for [this Jun. 6 BuzzFeed News quiz](https://www.buzzfeednews.com/article/peteraldhous/democratic-presidential-candidates-twitter-quiz), asking readers if they can recognize the candidates from their signature two-word phrases on Twitter.
+
+### Data
+
+We gathered data on tweets from the campaign accounts of 23 Democrats running for president, for the previous 90 days or since their campaign accouncement, if more recent, using using the [rtweet](https://rtweet.info/) R package to access the [Twitter API](https://developer.twitter.com/en/docs/api-reference-index). (To run this code, you will need to [authorize](https://rtweet.info/articles/auth.html) for your own Twitter API access tokens/)
+
+```{r, warning=FALSE, message=FALSE}
+# required packages
+library(rtweet)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(DT)
+
+# Set default timezone for session to UTC
+Sys.setenv(TZ = "UTC")
+
+# load campaign account data
+candidates <- read_csv("campaign_accounts.csv")
+
+# get tweets
+tweets <- tibble()
+
+for (s in candidates$screen_name) {
+  tmp <- get_timeline(s, n = 3200)
+  tweets <- bind_rows(tweets, tmp)
+}
+
+tweets <- inner_join(tweets, candidates) %>%
+  mutate(est_timestamp = with_tz(created_at, "America/New_York"),
+         est_date = date(est_timestamp)) %>%
+  filter(est_date >= announced & est_date >= today(tzone = "America/New_York")-90)
+
+rm(tmp, s)
+
+# summary data
+summary <- tweets %>%
+  group_by(screen_name, announced) %>%
+  summarize(first = min(est_date),
+            tweets = n())
+
+datatable(summary)
+```
+
+### Setting up for text analysis
+
+```{r, results="hide", warning=FALSE, message=FALSE}
+# load required packages
+library(tidytext)
+library(tidyr)
+library(stringr)
+library(wordcloud)
+
+# palettes for wordclouds
+dem_pal <- c("#47B5FF", "#1482EE", "#004FBB")
+
+# regex for parsing tweets using the tidytext package
+replace_reg <- "https?://[^\\s]+|&amp;|&lt;|&gt;|\\bRT\\b"
+```
+
+
+### Tokenize tweets to bigrams
+
+We tokenized original tweets only, excluding retweets, filtering for common "stop words" plus a custom set of words including the names of candidates or their relatives, distinctive home towns, and hashtags, and in the case of Tulsi Gabbard, the word "aloha."
+
+```{r, results="hide", warning=FALSE, message=FALSE}
+
+# tokenize into bigrams
+bigrams <- tweets %>%
+  filter(is_retweet == FALSE) %>%
+  select(screen_name,text,full_name) %>%
+  mutate(text = str_replace_all(text, replace_reg, "")) %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  separate(bigram, into = c("first","second"), sep = " ", remove = FALSE) %>%
+  anti_join(stop_words, by = c("first" = "word")) %>%
+  anti_join(stop_words, by = c("second" = "word")) %>%
+  filter(str_detect(first, "[a-z]") &
+         str_detect(second, "[a-z]"))
+
+# filter for custom stop words
+bigrams <- bigrams %>%
+  filter(!grepl("bennet|biden|booker|buttigieg|pete|bullock|castro|julian|deblasio|blasio|delaney|gabbard|aloha|tulsi|gillibrand|harris|hickenlooper|inslee|klobuchar|messam|wayne|moulton|o'rourke|orourke|beto|ryan|tim|sanders|swalwell|warren|williamson|yang|chirlane|caroline|san antonio|south bend|el paso",bigram))
+
+```
+
+### Bigram clouds for each candidate
+
+```{r, results="hide", warning=FALSE, message=FALSE}
+bigram_count <- bigrams %>%
+  group_by(bigram,full_name) %>%
+  count() %>%
+  ungroup()
+  
+for (p in unique(bigram_count$full_name)) {
+  tmp <- bigram_count %>%
+    filter(full_name == p)
+  png(paste0("wordclouds/",p,".png"), width = 600, height = 500)
+  try(wordcloud(tmp$bigram,
+                tmp$n,
+                family = "BasierSquare-SemiBold",
+                max.words = 50, 
+                random.order = FALSE,
+                colors = dem_pal,
+                rot.per = 0))
+  dev.off()
+}
+```
+
