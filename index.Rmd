@@ -1,4 +1,4 @@
-# Can You Guess These Presidential Candidates Based On What They Tweet About?
+# Can You Guess These Presidential Candidates Based On Their Most Popular Talking Points?
 
 ```{r setup, include=FALSE}
 library(knitr)
