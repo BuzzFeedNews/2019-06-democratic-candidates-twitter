@@ -1,4 +1,4 @@
-# Can You Guess These Presidential Candidates Based On What They Tweet About?
+# Can You Guess These Presidential Candidates Based On Their Most Popular Talking Points?
 
 R code underlying [this Jun. 6, 2019 BuzzFeed News quiz](https://www.buzzfeednews.com/article/peteraldhous/2020-election-democratic-primary-tweets) asking readers to recognize Democratic presidential candidates from their signature two-word phrases on Twitter.
 
