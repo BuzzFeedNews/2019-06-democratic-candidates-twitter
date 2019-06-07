@@ -1,11 +1,11 @@
-# Which Democratic Presidential Candidate Is This?
+# Can You Guess These Presidential Candidates Based On What They Tweet About?
 
 ```{r setup, include=FALSE}
 library(knitr)
 opts_chunk$set(out.width="900px", dpi=300)
 ```
 
-Data and [R](https://www.r-project.org/) code for [this Jun. 6 BuzzFeed News quiz](https://www.buzzfeednews.com/article/peteraldhous/democratic-presidential-candidates-twitter-quiz), asking readers if they can recognize the candidates from their signature two-word phrases on Twitter.
+Data and [R](https://www.r-project.org/) code for [this Jun. 6 BuzzFeed News quiz](https://www.buzzfeednews.com/article/peteraldhous/2020-election-democratic-primary-tweets), asking readers if they can recognize the candidates from their signature two-word phrases on Twitter.
 
 ### Data
 
